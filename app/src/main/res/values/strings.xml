@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MP3Player</string>
+    <string name="storage">Storage</string>
+    <string name="url">URL</string>
 </resources>
