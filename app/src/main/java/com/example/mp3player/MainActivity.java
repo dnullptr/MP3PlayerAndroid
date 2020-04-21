@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -67,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     public int CurrentSong = R.raw.song;
     public int MY_PERM_REQ=1;
     boolean titleOrArtist=true;
+    Toolbar tab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,12 +83,6 @@ public class MainActivity extends AppCompatActivity {
 
         pls=new Playlist(); //my class for playlists....
         getExtMusic();
-
-
-        Log.d("TAG", "onCreate: "+Environment.getExternalStorageDirectory().getPath());
-        File filetest=new File(String.valueOf(Uri.parse(Environment.getExternalStorageDirectory().getPath()+"/tpaintest.mp3")));
-        Log.d("CANREAD", filetest.canRead()+" "+filetest.exists());
-
 
         mediaPlayer = MediaPlayer.create(getApplicationContext(), CurrentSong);
         seekBar = (SeekBar) findViewById(R.id.seekBar);
@@ -121,20 +117,21 @@ public class MainActivity extends AppCompatActivity {
 
 
         ///////////////////////////////////////////////SPINNER////////////////////////////////////////
-        spinner.setAdapter(new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item,fillPlaylistFromRes()));
+        spinner.setAdapter(new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item,pls.getCleanSpinnerList()));
 
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String selectSongSpinner = parent.getItemAtPosition(position).toString();
-                CurrentSong = giveNameGetID(selectSongSpinner);
                 mediaPlayer.reset();
-                mediaPlayer = MediaPlayer.create(getApplicationContext(), CurrentSong);
+                mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.searchForFullPath(selectSongSpinner)));
+                pls.setPlayInd(pls.searchForFullPath(selectSongSpinner));
                 handler.postDelayed(stopThrd, 1000);
                 handler.postDelayed(playThrd, 1000);
                 handler.postDelayed(playSeekThrd, 1000);
-
+                TextView SNAME=findViewById(R.id.songName);
+                SNAME.setText((pls.getTitleWithIndex(pls.playInd)));
             }
 
             @Override
@@ -165,7 +162,15 @@ public class MainActivity extends AppCompatActivity {
         PlayingEvents();
         fillPlaylistFromRes(); //HERE THE RESTOCK HAPPENS!
 
+        tab=findViewById(R.id.tab);
+        tab.setOnClickListener(new TabLayout.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(),"Bla",Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
 
     @SuppressLint("ResourceType")
     public int giveNameGetID(String songName) {
@@ -415,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
                                 mediaPlayer2.start();
                                 mediaIconSet(1);
                                 eqAnim.setVisibility(View.VISIBLE);
-                                //songName.setText(streamURI);
+
                             }
                             else {
                                 mediaPlayer2.pause();

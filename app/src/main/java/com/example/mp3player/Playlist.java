@@ -63,6 +63,7 @@ public class Playlist {
         playInd=i;
     }
 
+
     public void setLooped(boolean looped) {
         isLooped = looped;
     }
@@ -98,5 +99,27 @@ public class Playlist {
         }
         else return this.fullPathList.get(playInd); //wont move
 
+    }
+
+    public ArrayList<String> getCleanSpinnerList()
+    {
+        ArrayList<String> spinner=new ArrayList<>();
+        for(int ind=0;ind<this.title_artist_Map.size();ind++)
+            spinner.add(Objects.requireNonNull(title_artist_Map.get(ind))[0]);
+        return spinner;
+    }
+
+    public String searchForFullPath(String dumbSt)
+    {
+        for(int ind=0;ind<this.title_artist_Map.size();ind++)
+            if(this.title_artist_Map.get(ind)[0].equals(dumbSt))
+                return this.fullPathList.get(ind);
+            return this.fullPathList.get(playInd); //if not found , it wont change the playlist.
+    }
+    public void setPlayInd(String dumbSt)
+    {
+        for(int ind=0;ind<this.title_artist_Map.size();ind++)
+            if(this.title_artist_Map.get(ind)[0].equals(dumbSt))
+                playInd=ind;
     }
 }
