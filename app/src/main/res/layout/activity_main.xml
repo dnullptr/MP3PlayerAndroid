@@ -4,17 +4,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layoutDirection="ltr"
     android:background="@drawable/app_bg2"
+    android:layoutDirection="ltr"
     tools:context=".MainActivity">
 
 
     <Button
         android:id="@+id/buttonPlay"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:background="@drawable/play128"
         android:onClick="Play"
         android:text="Play"
+        android:textColor="@android:color/transparent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.501"
@@ -24,43 +26,44 @@
 
     <Button
         android:id="@+id/buttonPrev"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:layout_marginStart="52dp"
+        android:background="@drawable/prev128"
         android:onClick="Prev"
-        android:text="Prev"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/buttonPlay"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="0.465"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.696" />
+        app:layout_constraintVertical_bias="0.695" />
 
     <Button
         android:id="@+id/buttonNext"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:layout_marginEnd="56dp"
+        android:background="@drawable/next128"
         android:onClick="Next"
-        android:text="Next"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.509"
         app:layout_constraintStart_toEndOf="@+id/buttonPlay"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.696" />
+        app:layout_constraintVertical_bias="0.695" />
 
     <Button
         android:id="@+id/buttonStop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="144dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:background="@drawable/stop128"
         android:onClick="Stop"
-        android:text="Stop"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/urlText"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonPlay" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonPlay"
+        app:layout_constraintVertical_bias="0.3" />
 
     <TextView
         android:id="@+id/titleText"
@@ -177,7 +180,7 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/titleText2"
-        app:layout_constraintVertical_bias="0.87"
+        app:layout_constraintVertical_bias="0.927"
         app:srcCompat="@drawable/stopicon" />
 
     <Spinner
@@ -201,7 +204,7 @@
         app:layout_constraintHorizontal_bias="0.29"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.927"
+        app:layout_constraintVertical_bias="0.879"
         app:srcCompat="@drawable/playlist" />
 
     <Switch
@@ -260,5 +263,19 @@
         app:layout_constraintHorizontal_bias="0.364"
         app:layout_constraintStart_toStartOf="@+id/switch1"
         app:layout_constraintTop_toTopOf="@+id/switch1" />
+
+    <ImageButton
+        android:id="@+id/imageButton"
+        android:layout_width="26dp"
+        android:layout_height="29dp"
+        android:layout_marginTop="80dp"
+        android:onClick="SwapTitleArtist"
+        app:layout_constraintBottom_toTopOf="@+id/titleText2"
+        app:layout_constraintEnd_toStartOf="@+id/titleText"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        app:srcCompat="@android:drawable/ic_menu_my_calendar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

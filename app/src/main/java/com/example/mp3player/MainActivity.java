@@ -2,16 +2,26 @@ package com.example.mp3player;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -23,13 +33,14 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.android.material.tabs.TabLayout;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -52,13 +63,31 @@ public class MainActivity extends AppCompatActivity {
     TextView urlText;
     Button urlStramBtn;
     MediaPlayer mediaPlayer2;
-    public int CurrentSong = R.raw.song, CurrentSongListIndex = 0;
-    public boolean isSDSource = false;
+    Playlist pls;
+    public int CurrentSong = R.raw.song;
+    public int MY_PERM_REQ=1;
+    boolean titleOrArtist=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) //if not yet got SD/EXT permissions..
+        {
+            if(ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,Manifest.permission.READ_EXTERNAL_STORAGE))
+            ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},MY_PERM_REQ);
+        }
+
+        pls=new Playlist(); //my class for playlists....
+        getExtMusic();
+
+
+        Log.d("TAG", "onCreate: "+Environment.getExternalStorageDirectory().getPath());
+        File filetest=new File(String.valueOf(Uri.parse(Environment.getExternalStorageDirectory().getPath()+"/tpaintest.mp3")));
+        Log.d("CANREAD", filetest.canRead()+" "+filetest.exists());
+
+
         mediaPlayer = MediaPlayer.create(getApplicationContext(), CurrentSong);
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         handler = new Handler();
@@ -92,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         ///////////////////////////////////////////////SPINNER////////////////////////////////////////
-        spinner.setAdapter(new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item, fillPlaylistFromRes()));
+        spinner.setAdapter(new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item,fillPlaylistFromRes()));
 
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -134,7 +163,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         PlayingEvents();
-        fillPlaylistFromRes();
+        fillPlaylistFromRes(); //HERE THE RESTOCK HAPPENS!
+
     }
 
     @SuppressLint("ResourceType")
@@ -254,8 +284,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void Play(View view) {
-        if(mediaPlayer.getCurrentPosition() < 0) //if song is stopped the position is -3459385 something..
-            mediaPlayer=MediaPlayer.create(getApplicationContext(),CurrentSong);
+
+            if (mediaPlayer.getCurrentPosition() < 0) //if song is stopped the position is -3459385 something..
+                mediaPlayer.reset();
+            try {
+                mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.getCurrentFullPath()));
+            }
+            catch (Exception e)
+            {
+                Toast.makeText(this,"Song was found , but couldn't be played!",Toast.LENGTH_SHORT).show();
+                pls.moveToFirst();
+                mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.getCurrentFullPath()));
+            }
+
+
 
 
         playBtn=findViewById(R.id.buttonPlay);
@@ -270,7 +312,8 @@ public class MainActivity extends AppCompatActivity {
                     mediaPlayer.start();
                     mediaIconSet(1);
                     eqAnim.setVisibility(View.VISIBLE);
-                    songName.setText(getResources().getText(CurrentSong).toString().replace("res/raw/",""));
+                    songName.setText(pls.getTitleWithIndex(pls.playInd));
+
                 }
                 else {
                     mediaPlayer.pause();
@@ -279,9 +322,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                if(mediaPlayer.isPlaying()) {
                    playBtn.setText("Pause");
+                   playBtn.setBackground(getResources().getDrawable(R.drawable.pause128,null));
                }
-               else
+               else {
                    playBtn.setText("Play");
+                   playBtn.setBackground(getResources().getDrawable(R.drawable.play128,null));
+               }
             }
         };
         playThrd.run();
@@ -290,8 +336,6 @@ public class MainActivity extends AppCompatActivity {
 
             public void run()
             {
-
-                Log.d("Seek Debug", "run: ");
                 seekBar.setProgress(mediaPlayer.getCurrentPosition()); //set seek val
                 handler.postDelayed(this,1000);
             }
@@ -303,6 +347,7 @@ public class MainActivity extends AppCompatActivity {
     public void Stop(View view) {
         mediaPlayer.reset();
         playBtn.setText("Play");
+        playBtn.setBackground(getResources().getDrawable(R.drawable.play128,null)); //new LOGO changes as well.
         stopThrd=new Thread(){public void run(){
 
             timeText.setText("Stopped");
@@ -312,21 +357,11 @@ public class MainActivity extends AppCompatActivity {
         handler.postDelayed(stopThrd,1000);
     }
 
-    public void Next(View view) throws IllegalAccessException {
-        Log.d("TAG", "Next: "+CurrentSong+", "+"Poll:"+playlist.get(CurrentSongListIndex));
-
-            if(CurrentSongListIndex==playlist.size()-1)
-            {
-                CurrentSong=playlist.get(CurrentSongListIndex);
-                CurrentSongListIndex=0;
-            }
-            else {
-                CurrentSong = playlist.get(CurrentSongListIndex++);
-            }
+    public void Next(View view) {
 
         mediaPlayer.reset();
         playBtn.setText("Play");
-        mediaPlayer=MediaPlayer.create(getApplicationContext(),CurrentSong);
+        mediaPlayer=MediaPlayer.create(getApplicationContext(),Uri.parse(pls.moveToAndGetNext())); //internal call to my lovely playlist class <3
         handler.postDelayed(stopThrd,1000);
         handler.postDelayed(playThrd,1000);
         handler.postDelayed(playSeekThrd,1000);
@@ -337,18 +372,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void Prev(View view) {
-        if(CurrentSongListIndex==0)
-        {
-            CurrentSong=playlist.get(CurrentSongListIndex);
-            CurrentSongListIndex=playlist.size()-1;
-        }
-        else {
-            CurrentSong = playlist.get(CurrentSongListIndex--);
-        }
-
         mediaPlayer.reset();
         playBtn.setText("Play");
-        mediaPlayer=MediaPlayer.create(getApplicationContext(),CurrentSong);
+        mediaPlayer=MediaPlayer.create(getApplicationContext(),Uri.parse(pls.moveToAndGetPrev())); //internal call to my lovely playlist class <3
         handler.postDelayed(stopThrd,1000);
         handler.postDelayed(playThrd,1000);
         handler.postDelayed(playSeekThrd,1000);
@@ -419,6 +445,49 @@ public class MainActivity extends AppCompatActivity {
                     playSeekThrd.start();
                 }
         }.run();
+
+    }
+
+    @SuppressLint("Recycle")
+    public void getExtMusic()
+    {
+
+        int songTitle=0,songArtist=0,actualName=0;
+        ContentResolver contentResolver = getContentResolver();
+        Uri CurrentSongUri= MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        Cursor songsCursor= null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            Log.d("TAG", "getExtMusicURINAME: "+String.valueOf(CurrentSongUri));
+            songsCursor = contentResolver.query(CurrentSongUri,null,null,null);
+        }
+        if(songsCursor.getCount() >0 && songsCursor.moveToFirst())
+        {
+            songTitle=songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+            songArtist=songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
+            actualName=songsCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
+        }
+
+        while(!songsCursor.isAfterLast())
+        {
+            Log.d("TAG", "getExtMusic: "+ CurrentSongUri+songsCursor.getString(songTitle)+songsCursor.getString(actualName));
+            pls.addSong(songsCursor.getString(actualName),songsCursor.getString(songTitle),songsCursor.getString(songArtist));
+           songsCursor.moveToNext();
+
+
+        }
+    }
+
+    public void SwapTitleArtist(View view) {
+        if(songName.getText().length()>1 && titleOrArtist) {
+            songName.setText(pls.getArtistWithIndex(pls.playInd));
+            titleOrArtist = !titleOrArtist;
+        }
+        else if(songName.getText().length()>1)
+        {
+            songName.setText(pls.getTitleWithIndex(pls.playInd));
+            titleOrArtist = !titleOrArtist;
+        }
+
 
     }
 }
