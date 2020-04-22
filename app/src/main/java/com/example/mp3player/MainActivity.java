@@ -24,7 +24,9 @@ import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.FocusFinder;
 import android.view.View;
+import android.webkit.PermissionRequest;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -65,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
     Button urlStramBtn;
     MediaPlayer mediaPlayer2;
     Playlist pls;
-    public int CurrentSong = R.raw.song;
+    public int CurrentSong = R.raw.smpl;
     public int MY_PERM_REQ=1;
     boolean titleOrArtist=true;
     Toolbar tab;
@@ -84,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         pls=new Playlist(); //my class for playlists....
         getExtMusic();
 
-        mediaPlayer = MediaPlayer.create(getApplicationContext(), CurrentSong);
+        mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.getCurrentFullPath()));
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         handler = new Handler();
         AboutMe(null);
@@ -121,17 +123,19 @@ public class MainActivity extends AppCompatActivity {
 
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @SuppressLint("ResourceType")
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String selectSongSpinner = parent.getItemAtPosition(position).toString();
                 mediaPlayer.reset();
-                mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.searchForFullPath(selectSongSpinner)));
+
+
+                mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.searchForFullPath_w_setPlayInd(selectSongSpinner)));
                 pls.setPlayInd(pls.searchForFullPath(selectSongSpinner));
-                handler.postDelayed(stopThrd, 1000);
-                handler.postDelayed(playThrd, 1000);
-                handler.postDelayed(playSeekThrd, 1000);
-                TextView SNAME=findViewById(R.id.songName);
-                SNAME.setText((pls.getTitleWithIndex(pls.playInd)));
+                Log.d("KETA SHEL HA SPINNER", "PLAYIND "+pls.playInd+" "+pls.getTitleWithIndex(pls.playInd));
+                if(!mediaPlayer.isPlaying())
+                    Play(view);
+                else Toast.makeText(getApplicationContext(),"Playing, stop and then re-select",Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -160,15 +164,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         PlayingEvents();
-        fillPlaylistFromRes(); //HERE THE RESTOCK HAPPENS!
-
-        tab=findViewById(R.id.tab);
-        tab.setOnClickListener(new TabLayout.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getApplicationContext(),"Bla",Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
 
@@ -187,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d("Filling the Field[]", "fillPlaylistFromRes: " + inRawArr[i].getName() + " " + playlist.get(i));
 
         }
-        return namesForSpinner;
+        return namesForSpinner; //deprecated
     }
 
     public CharSequence nicelyFormat(int timeMs) {
@@ -207,11 +202,13 @@ public class MainActivity extends AppCompatActivity {
         if (!urlRawSwitch.isChecked()) { //////////////////////if normal raw player.. then..
 
 
-        if (mediaPlayer.isPlaying()) {
+        if (mediaPlayer.isPlaying() && mediaPlayer != null) {
             runnable = new Runnable() {
                 @Override
                 public void run() {
                     timeText.setText(nicelyFormat(mediaPlayer.getCurrentPosition())); //set time val
+                    if(mediaPlayer.getCurrentPosition() > mediaPlayer.getDuration()-1000 && mediaPlayer.getCurrentPosition() <= mediaPlayer.getDuration()) //auto play next
+                        Next(getCurrentFocus());
                     PlayingEvents();
                 }
 
@@ -228,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
             };
         }
         handler.postDelayed(runnable, 1000);
+
     }
         else //////////////////////////////URL Player
         {
@@ -290,15 +288,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void Play(View view) {
 
-            if (mediaPlayer.getCurrentPosition() < 0) //if song is stopped the position is -3459385 something..
+            if (mediaPlayer.getCurrentPosition() < 0 && !mediaPlayer.isPlaying()) //if song is stopped the position is -3459385 something..
                 mediaPlayer.reset();
-            try {
-                mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.getCurrentFullPath()));
-            }
-            catch (Exception e)
+            playBtn=findViewById(R.id.buttonPlay); //ki zarih
+           if(!mediaPlayer.isPlaying() && playBtn.getText().equals("Pause")) //ki shnia lifney she ani hozer lenagen hakaftor reads pause
             {
-                Toast.makeText(this,"Song was found , but couldn't be played!",Toast.LENGTH_SHORT).show();
-                pls.moveToFirst();
                 mediaPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(pls.getCurrentFullPath()));
             }
 
@@ -308,19 +302,20 @@ public class MainActivity extends AppCompatActivity {
         playBtn=findViewById(R.id.buttonPlay);
         songName=findViewById(R.id.songName);
         timeText=findViewById(R.id.songName2);
-        seekBar.setMax(mediaPlayer.getDuration());
+
         final GifImageView eqAnim=(GifImageView)findViewById(R.id.eqAnim);
         playThrd=new Thread(){
-            @SuppressLint("ResourceType")
             public void run(){
                 if(playBtn.getText().equals("Play")) {
+                    seekBar.setMax(mediaPlayer.getDuration());
                     mediaPlayer.start();
                     mediaIconSet(1);
                     eqAnim.setVisibility(View.VISIBLE);
                     songName.setText(pls.getTitleWithIndex(pls.playInd));
+                    Log.d("SONG NAME CHANGE", "Now it's "+pls.getTitleWithIndex(pls.playInd));
 
                 }
-                else {
+                else{
                     mediaPlayer.pause();
                     mediaIconSet(2);
                     eqAnim.setVisibility(View.INVISIBLE);
@@ -372,10 +367,6 @@ public class MainActivity extends AppCompatActivity {
         handler.postDelayed(playSeekThrd,1000);
     }
 
-    public void AboutMe(View view) {
-        Toast.makeText(getApplicationContext(),"AudioPlayer was developed by Daniel Ohayon for Matan Nir",Toast.LENGTH_LONG).show();
-    }
-
     public void Prev(View view) {
         mediaPlayer.reset();
         playBtn.setText("Play");
@@ -383,6 +374,10 @@ public class MainActivity extends AppCompatActivity {
         handler.postDelayed(stopThrd,1000);
         handler.postDelayed(playThrd,1000);
         handler.postDelayed(playSeekThrd,1000);
+    }
+
+    public void AboutMe(View view) {
+        Toast.makeText(getApplicationContext(),"AudioPlayer was developed by Daniel Ohayon for Matan Nir",Toast.LENGTH_LONG).show();
     }
 
     public void prepareURLStream(String url)
@@ -494,5 +489,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+    }
+
+    public void goPlaylist(View view) {
+        setContentView(R.layout.activity_main2);
     }
 }

@@ -52,6 +52,7 @@ public class Playlist {
 
     public String getCurrentFullPath()
     {
+        Log.d("TAG", "getCurrentFullPath: "+ this.fullPathList.get(playInd));
         return this.fullPathList.get(playInd);
     }
     public void moveToFirst()
@@ -112,14 +113,36 @@ public class Playlist {
     public String searchForFullPath(String dumbSt)
     {
         for(int ind=0;ind<this.title_artist_Map.size();ind++)
-            if(this.title_artist_Map.get(ind)[0].equals(dumbSt))
+            if(this.title_artist_Map.get(ind)[0].equals(dumbSt)) {
+                Log.d("IN Playlist Class", "found full string");
                 return this.fullPathList.get(ind);
+            }
             return this.fullPathList.get(playInd); //if not found , it wont change the playlist.
+    }
+
+    public String searchForFullPath_w_setPlayInd(String dumbSt)
+    {
+        for(int ind=0;ind<this.title_artist_Map.size();ind++)
+            if(this.title_artist_Map.get(ind)[0].equals(dumbSt)) {
+                Log.d("IN Playlist Class", "found full string");
+                playInd=ind;
+                return this.fullPathList.get(ind);
+            }
+        return this.fullPathList.get(playInd); //if not found , it wont change the playlist.
     }
     public void setPlayInd(String dumbSt)
     {
         for(int ind=0;ind<this.title_artist_Map.size();ind++)
-            if(this.title_artist_Map.get(ind)[0].equals(dumbSt))
+            if(Objects.requireNonNull(this.title_artist_Map.get(ind))[0].equals(dumbSt))
+            {
+                Log.d("IN Playlist Class", "setting PlayInd to: "+ind);
                 playInd=ind;
+            }
+
+    }
+
+    public boolean isPlaylistEmpty()
+    {
+        return this.fullPathList.isEmpty() && this.title_artist_Map.isEmpty();
     }
 }
