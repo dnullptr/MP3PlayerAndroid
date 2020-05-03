@@ -207,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     timeText.setText(nicelyFormat(mediaPlayer.getCurrentPosition())); //set time val
-                    if(mediaPlayer.getCurrentPosition() > mediaPlayer.getDuration()-1000 && mediaPlayer.getCurrentPosition() <= mediaPlayer.getDuration()) //auto play next
+                    if(mediaPlayer.getCurrentPosition() > mediaPlayer.getDuration()-1000 && mediaPlayer.getCurrentPosition() <= mediaPlayer.getDuration() && mediaPlayer.isPlaying() ) //auto play next
                         Next(getCurrentFocus());
                     PlayingEvents();
                 }
@@ -297,8 +297,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
 
-
-
+        Log.d("TAG", "Play: IM HEREEEE");
         playBtn=findViewById(R.id.buttonPlay);
         songName=findViewById(R.id.songName);
         timeText=findViewById(R.id.songName2);
@@ -345,7 +344,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void Stop(View view) {
-        mediaPlayer.reset();
+
+        mediaPlayer.pause();
+        mediaPlayer.seekTo(0);
         playBtn.setText("Play");
         playBtn.setBackground(getResources().getDrawable(R.drawable.play128,null)); //new LOGO changes as well.
         stopThrd=new Thread(){public void run(){
